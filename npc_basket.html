@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>NPC Basket</title>
+
+<style>
+body{
+  font-family: Arial;
+  padding: 20px;
+  max-width: 900px;
+}
+
+h2,h3{margin-top:20px}
+
+select,input,button{
+  padding:6px;
+  margin:5px;
+}
+
+table{
+  border-collapse:collapse;
+  margin-top:10px;
+  width:100%;
+}
+
+th,td{
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:right;
+}
+
+th:first-child,td:first-child{
+  text-align:left;
+}
+
+tfoot{
+  font-weight:bold;
+  background:#eee;
+}
+
+.civ{
+  margin-right:15px;
+}
+
+.removeBtn{
+  color:red;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:bold;
+  border:none;
+  background:none;
+  padding:0 4px;
+}
+
+.removeBtn:hover{
+  transform:scale(1.2);
+}
+
+#clearBasket{
+  margin-top:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+  <label for="languageSelect" id="langLabel">Language / Язык:</label>
+  <select id="languageSelect" style="margin-left: 10px;">
+    <option value="en">English</option>
+    <option value="ru" selected>Русский</option>
+  </select>
+</div>
+
+<h2 id="pageTitle">NPC корзина</h2>
+
+<h3 id="civLabel">Цивилизация войск</h3>
+
+<label class="civ">
+  <input type="radio" name="civ" value="germans" checked>
+  <span id="civGermans">Германцы</span>
+</label>
+
+<label class="civ">
+  <input type="radio" name="civ" value="gauls">
+  <span id="civGauls">Галлы</span>
+</label>
+
+<label class="civ">
+  <input type="radio" name="civ" value="romans">
+  <span id="civRomans">Римляне</span>
+</label>
+
+<h3 id="troopsLabel">Войска</h3>
+
+<select id="troop"></select>
+<input id="troopCount" type="number" min="1" value="10">
+<button id="addTroop">+ Добавить</button>
+
+<div id="troopCost"></div>
+
+<h3 id="buildingLabel">Здание</h3>
+<select id="b"></select>
+<input id="lvl" type="number" min="1" value="1">
+<button id="addBuilding">+ Добавить</button>
+<div id="cost"></div>
+
+<h3 id="basketLabel">Корзина</h3>
+
+<table>
+<thead>
+<tr>
+  <th id="headerName">Название</th>
+  <th id="headerLevel">Ур./Кол</th>
+  <th id="headerWood">Дерево</th>
+  <th id="headerClay">Глина</th>
+  <th id="headerIron">Железо</th>
+  <th id="headerGrain">Зерно</th>
+  <th id="headerTotal">Всего</th>
+  <th></th>
+</tr>
+</thead>
+
+<tbody id="rows"></tbody>
+
+<tfoot>
+<tr>
+  <td colspan="2" id="footerTotal">Total</td>
+  <td id="t0">0</td>
+  <td id="t1">0</td>
+  <td id="t2">0</td>
+  <td id="t3">0</td>
+  <td id="grandTotal">0</td>
+  <td></td>
+</tr>
+</tfoot>
+</table>
+
+<button id="clearBasket">
+🗑 Очистить корзину
+</button>
+
+<script>
+
+// ================= TRANSLATIONS =================
+
+const translations = {
+  en: {
+    pageTitle: "NPC Basket",
+    langLabel: "Language / Язык:",
+    civLabel: "Troop Civilization",
+    civGermans: "Germans",
+    civGauls: "Gauls",
+    civRomans: "Romans",
+    troopsLabel: "Troops",
+    addButton: "+ Add",
+    buildingLabel: "Building",
+    basketLabel: "Basket",
+    headerName: "Name",
+    headerLevel: "Level/Qty",
+    headerWood: "Wood",
+    headerClay: "Clay",
+    headerIron: "Iron",
+    headerGrain: "Grain",
+    headerTotal: "Total",
+    footerTotal: "Total",
+    clearBasketButton: "🗑 Clear Basket",
+    cost: "Cost:",
+    buildings: [
+      "Sawmill", "Clay Pit", "Iron Mine", "Farm", "Wood Sawmill", "Brick Factory",
+      "Iron Foundry", "Flour Mill", "Bakery", "Warehouse", "Granary", "Weapon Smithy",
+      "Armor Smithy", "Arena", "Main Building", "Gathering Point", "Market", "Embassy",
+      "Barracks", "Stables", "Workshop", "Academy", "Hidden Treasury", "Town Hall",
+      "Residence", "Palace", "Treasury", "Trading Office", "Great Barracks",
+      "Great Stables", "City Wall", "Earthen Wall", "Palisade", "Quarry", "Brewery",
+      "Trap Maker", "Tavern", "Great Warehouse", "Great Granary", "Wonder of the World",
+      "Watering Hole", "Fence", "Thorn Fence", "Commander's Estate", "Aqueduct",
+      "Hospital", "Siege Wall", "Spartan Hospital", "Port", "Barricade"
+    ],
+    troopsGermans: [
+      "Clubswinger", "Spearman", "Axeman", "Scout", "Paladin", "Teutonic Knight",
+      "Ram", "Catapult", "Chief", "Settler"
+    ],
+    troopsGauls: [
+      "Phalanx", "Swordsman", "Pathfinder", "Teutonic Thunder", "Druid Rider",
+      "Eduan Cavalry", "Ram", "Catapult", "Chief", "Settler"
+    ],
+    troopsRomans: [
+      "Legionnaire", "Praetorian", "Imperian", "Horse Scout", "Emperor's Cavalry",
+      "Caesar's Cavalry", "Ram", "Fire Catapult", "Senator", "Settler"
+    ]
+  },
+  ru: {
+    pageTitle: "NPC корзина",
+    langLabel: "Language / Язык:",
+    civLabel: "Цивилизация войск",
+    civGermans: "Германцы",
+    civGauls: "Галлы",
+    civRomans: "Римляне",
+    troopsLabel: "Войска",
+    addButton: "+ Добавить",
+    buildingLabel: "Здание",
+    basketLabel: "Корзина",
+    headerName: "Название",
+    headerLevel: "Ур./Кол",
+    headerWood: "Дерево",
+    headerClay: "Глина",
+    headerIron: "Железо",
+    headerGrain: "Зерно",
+    headerTotal: "Всего",
+    footerTotal: "Итого",
+    clearBasketButton: "🗑 Очистить корзину",
+    cost: "Стоимость:",
+    buildings: [
+      "Лесопилка", "Глиняный карьер", "Железный рудник", "Ферма", "Лесопильный завод",
+      "Кирпичный завод", "Чугунолитейный завод", "Мукомольная мельница", "Пекарня",
+      "Склад", "Амбар", "Кузница оружия", "Кузница доспехов", "Арена", "Главное здание",
+      "Пункт сбора", "Рынок", "Посольство", "Казарма", "Конюшня", "Мастерская",
+      "Академия", "Тайник", "Ратуша", "Резиденция", "Дворец", "Сокровищница",
+      "Торговая палата", "Большая казарма", "Большая конюшня", "Городская стена",
+      "Земляной вал", "Изгородь", "Каменотес", "Пивоварня", "Капканщик", "Таверна",
+      "Большой склад", "Большой амбар", "Чудо Света", "Водопой", "Ограда",
+      "Натяжной забор", "Дом полководца", "Водопровод", "Госпиталь", "Защитная стена",
+      "Госпиталь спартанцев", "Порт", "Баррикада"
+    ],
+    troopsGermans: [
+      "Дубинщик", "Копьеносец", "Топорщик", "Скаут", "Паладин", "Тевтонская конница",
+      "Таран", "Катапульта", "Вождь", "Поселенец"
+    ],
+    troopsGauls: [
+      "Фаланга", "Мечник", "Следопыт", "Тевтонский Гром", "Друид-всадник",
+      "Эдуйская конница", "Таран", "Катапульта", "Предводитель", "Поселенец"
+    ],
+    troopsRomans: [
+      "Легионер", "Преторианец", "Империанец", "Конный разведчик", "Конница императора",
+      "Конница Цезаря", "Таран", "Огненная катапульта", "Сенатор", "Поселенец"
+    ]
+  }
+};
+
+let currentLang = "ru";
+
+function updateLanguage() {
+  const t = translations[currentLang];
+  
+  document.getElementById("pageTitle").textContent = t.pageTitle;
+  document.getElementById("langLabel").textContent = t.langLabel;
+  document.getElementById("civLabel").textContent = t.civLabel;
+  document.getElementById("civGermans").textContent = t.civGermans;
+  document.getElementById("civGauls").textContent = t.civGauls;
+  document.getElementById("civRomans").textContent = t.civRomans;
+  document.getElementById("troopsLabel").textContent = t.troopsLabel;
+  document.getElementById("buildingLabel").textContent = t.buildingLabel;
+  document.getElementById("basketLabel").textContent = t.basketLabel;
+  
+  document.getElementById("headerName").textContent = t.headerName;
+  document.getElementById("headerLevel").textContent = t.headerLevel;
+  document.getElementById("headerWood").textContent = t.headerWood;
+  document.getElementById("headerClay").textContent = t.headerClay;
+  document.getElementById("headerIron").textContent = t.headerIron;
+  document.getElementById("headerGrain").textContent = t.headerGrain;
+  document.getElementById("headerTotal").textContent = t.headerTotal;
+  document.getElementById("footerTotal").textContent = t.footerTotal;
+  document.getElementById("clearBasket").textContent = t.clearBasketButton;
+  
+  // Update button text
+  document.getElementById("addTroop").textContent = t.addButton;
+  document.getElementById("addBuilding").textContent = t.addButton;
+  
+  // Reload buildings and troops with new language
+  loadBuildingsDropdown();
+  loadTroops();
+  render();
+}
+
+document.getElementById("languageSelect").onchange = function() {
+  currentLang = this.value;
+  updateLanguage();
+};
+
+function RoundMul(v,n){
+  return Math.round(v/n)*n;
+}
+
+/* ================= BUILDINGS ================= */
+
+var buildings = [
+{name:"Лесопилка", cost:[40,100,50,60], k:1.67, maxLvl:22},
+{name:"Глиняный карьер", cost:[80,40,80,50], k:1.67, maxLvl:22},
+{name:"Железный рудник", cost:[100,80,30,60], k:1.67, maxLvl:22},
+{name:"Ферма", cost:[70,90,70,20], k:1.67, maxLvl:22},
+{name:"Лесопильный завод", cost:[520,380,290,90], k:1.80, maxLvl:5},
+{name:"Кирпичный завод", cost:[440,480,320,50], k:1.80, maxLvl:5},
+{name:"Чугунолитейный завод", cost:[200,450,510,120], k:1.80, maxLvl:5},
+{name:"Мукомольная мельница", cost:[500,440,380,1240], k:1.80, maxLvl:5},
+{name:"Пекарня", cost:[1200,1480,870,1600], k:1.80, maxLvl:5},
+{name:"Склад", cost:[130,160,90,40], k:1.28, maxLvl:20},
+{name:"Амбар", cost:[80,100,70,20], k:1.28, maxLvl:20},
+{name:"Кузница оружия", cost:[170,200,380,130], k:1.28, maxLvl:20},
+{name:"Кузница доспехов", cost:[130,210,410,130], k:1.28, maxLvl:20},
+{name:"Арена", cost:[1750,2250,1530,240], k:1.28, maxLvl:20},
+{name:"Главное здание", cost:[70,40,60,20], k:1.28, maxLvl:20},
+{name:"Пункт сбора", cost:[110,160,90,70], k:1.28, maxLvl:20},
+{name:"Рынок", cost:[80,70,120,70], k:1.28, maxLvl:20},
+{name:"Посольство", cost:[180,130,150,80], k:1.28, maxLvl:20},
+{name:"Казарма", cost:[210,140,260,120], k:1.28, maxLvl:20},
+{name:"Конюшня", cost:[260,140,220,100], k:1.28, maxLvl:20},
+{name:"Мастерская", cost:[460,510,600,320], k:1.28, maxLvl:20},
+{name:"Академия", cost:[220,160,90,40], k:1.28, maxLvl:20},
+{name:"Тайник", cost:[40,50,30,10], k:1.28, maxLvl:10},
+{name:"Ратуша", cost:[1250,1110,1260,600], k:1.28, maxLvl:20},
+{name:"Резиденция", cost:[580,460,350,180], k:1.28, maxLvl:20},
+{name:"Дворец", cost:[550,800,750,250], k:1.28, maxLvl:20},
+{name:"Сокровищница", cost:[2880,2740,2580,990], k:1.26, maxLvl:20},
+{name:"Торговая палата", cost:[1400,1330,1200,400], k:1.28, maxLvl:20},
+{name:"Большая казарма", cost:[630,420,780,360], k:1.28, maxLvl:20},
+{name:"Большая конюшня", cost:[780,420,660,300], k:1.28, maxLvl:20},
+{name:"Городская стена", cost:[70,90,170,70], k:1.28, maxLvl:20},
+{name:"Земляной вал", cost:[120,200,0,80], k:1.28, maxLvl:20},
+{name:"Изгородь", cost:[160,100,80,60], k:1.28, maxLvl:20},
+{name:"Каменотес", cost:[155,130,125,70], k:1.28, maxLvl:20},
+{name:"Пивоварня", cost:[1460,930,1250,1740], k:1.40, maxLvl:10},
+{name:"Капканщик", cost:[100,100,100,100], k:1.28, maxLvl:20},
+{name:"Таверна", cost:[700,670,700,240], k:1.33, maxLvl:20},
+{name:"Большой склад", cost:[650,800,450,200], k:1.28, maxLvl:20},
+{name:"Большой амбар", cost:[400,500,350,100], k:1.28, maxLvl:20},
+{name:"Чудо Света", cost:[66700,69050,72200,13200], k:1.0275, maxLvl:100},
+{name:"Водопой", cost:[780,420,660,540], k:1.28, maxLvl:20},
+{name:"Ограда", cost:[110,160,70,60], k:1.28, maxLvl:20},
+{name:"Натяжной забор", cost:[50,80,40,30], k:1.28, maxLvl:20},
+{name:"Дом полководца", cost:[1600,1250,1050,200], k:1.22, maxLvl:20},
+{name:"Водопровод", cost:[910,945,910,340], k:1.31, maxLvl:20},
+{name:"Госпиталь", cost:[320,280,420,360], k:1.28, maxLvl:20},
+{name:"Защитная стена", cost:[240,110,275,100], k:1.28, maxLvl:20},
+{name:"Госпиталь спартанцев", cost:[160,100,80,60], k:1.28, maxLvl:20},
+{name:"Порт", cost:[1440,1370,1290,495], k:1.28, maxLvl:20},
+{name:"Баррикада", cost:[110,170,70,50], k:1.28, maxLvl:20}
+];
+
+function cost(b,lvl){
+  return b.cost.map(x =>
+    RoundMul(x * Math.pow(b.k, lvl-1), 5)
+  );
+}
+
+/* ================= TROOPS ================= */
+
+var troopsByCiv = {
+  germans: [
+    {name:"Дубинщик", cost:[95,75,40,40]},
+    {name:"Копьеносец", cost:[145,70,85,40]},
+    {name:"Топорщик", cost:[130,120,170,70]},
+    {name:"Скаут", cost:[160,100,50,50]},
+    {name:"Паладин", cost:[370,270,290,75]},
+    {name:"Тевтонская конница", cost:[450,515,480,80]},
+    {name:"Таран", cost:[1000,300,350,70]},
+    {name:"Катапульта", cost:[900,1200,600,60]},
+    {name:"Вождь", cost:[35500,26600,25000,27200]},
+    {name:"Поселенец", cost:[5800,4400,4600,5200]}
+  ],
+
+  gauls: [
+    {name:"Фаланга", cost:[100,130,55,30]},
+    {name:"Мечник", cost:[140,150,185,60]},
+    {name:"Следопыт", cost:[170,150,20,40]},
+    {name:"Тевтонский Гром", cost:[350,450,230,60]},
+    {name:"Друид-всадник ", cost:[140,150,185,60]},
+    {name:"Эдуйская конница", cost:[500,620,675,170]},
+    {name:"Таран", cost:[950,555,330,75]},
+    {name:"Катапульта", cost:[960,1450,630,90]},
+    {name:"Предводитель", cost:[30750,45400,31000,37500]},
+    {name:"Поселенец", cost:[4400,5600,4200,3900]}
+  ],
+
+  romans: [
+    {name:"Легионер", cost:[120,100,150,30]},
+    {name:"Преторианец", cost:[100,130,160,70]},
+    {name:"Империанец", cost:[150,160,210,80]},
+    {name:"Конный разведчик", cost:[140,160,20,40]},
+    {name:"Конница императора", cost:[550,440,320,100]},
+    {name:"Конница Цезаря", cost:[550,640,800,180]},
+    {name:"Таран", cost:[900,360,500,70]},
+    {name:"Огненная катапульта", cost:[950,1350,600,90]},
+    {name:"Сенатор", cost:[30750,27200,45000,37500]},
+    {name:"Поселенец", cost:[4600,4200,5800,4400]},
+  ]
+};
+
+// Римляне = копия галлов
+troopsByCiv.romans = troopsByCiv.gauls;
+
+let currentCiv = "germans";
+let troops = troopsByCiv[currentCiv];
+
+function troopCost(item,count){
+  return item.cost.map(x => x * count);
+}
+
+function getDisplayName(names, index) {
+  return names[index] || "";
+}
+
+/* ================= DOM ================= */
+
+const troopSel = document.getElementById("troop");
+const troopCount = document.getElementById("troopCount");
+const troopCostDiv = document.getElementById("troopCost");
+
+const sel = document.getElementById("b");
+const lvlInp = document.getElementById("lvl");
+const costDiv = document.getElementById("cost");
+
+const rows = document.getElementById("rows");
+
+let basket = [];
+
+/* ================= INIT ================= */
+
+function loadTroops(){
+  troopSel.innerHTML = "";
+
+  const troopNames = currentLang === "en" 
+    ? (currentCiv === "romans" ? translations.en.troopsRomans : 
+       currentCiv === "gauls" ? translations.en.troopsGauls : 
+       translations.en.troopsGermans)
+    : (currentCiv === "romans" ? translations.ru.troopsRomans : 
+       currentCiv === "gauls" ? translations.ru.troopsGauls : 
+       translations.ru.troopsGermans);
+
+  troops.forEach((x,i)=>{
+    let o=document.createElement("option");
+    o.value=i;
+    o.text = getDisplayName(troopNames, i);
+    troopSel.add(o);
+  });
+
+  refreshTroopCost();
+}
+
+function loadBuildingsDropdown(){
+  sel.innerHTML = "";
+  const buildingNames = translations[currentLang].buildings;
+  
+  buildings.forEach((x,i)=>{
+    let o=document.createElement("option");
+    o.value=i;
+    o.text = getDisplayName(buildingNames, i);
+    sel.add(o);
+  });
+  
+  refreshCost();
+}
+
+/* ================= CIV CHANGE ================= */
+
+document.querySelectorAll('input[name="civ"]').forEach(r=>{
+  r.onchange = function(){
+    currentCiv = this.value;
+    troops = troopsByCiv[currentCiv];
+    loadTroops();
+  };
+});
+
+/* ================= BUILDINGS ================= */
+
+function refreshCost(){
+  let b = buildings[sel.value];
+  let lvl = Math.min(+lvlInp.value, b.maxLvl);
+  lvlInp.max = b.maxLvl;
+
+  let c = cost(b,lvl);
+  const t = translations[currentLang];
+  
+  costDiv.innerHTML =
+    `${t.cost} 🌲${c[0]} 🧱${c[1]} ⚙️${c[2]} 🌾${c[3]}`;
+}
+
+function add(){
+  let b = buildings[sel.value];
+  let lvl = +lvlInp.value;
+  let c = cost(b,lvl);
+  
+  const buildingNames = translations[currentLang].buildings;
+  const displayName = getDisplayName(buildingNames, b.cost === buildings[sel.value].cost ? sel.value : 0);
+
+  basket.push({n:b.name,l:lvl,c,displayName});
+  render();
+}
+
+/* ================= TROOPS ================= */
+
+function refreshTroopCost(){
+  let t = troops[troopSel.value];
+  let count = Math.max(1, +troopCount.value);
+
+  let c = troopCost(t,count);
+  const trans = translations[currentLang];
+
+  troopCostDiv.innerHTML =
+    `${trans.cost} 🌲${c[0]} 🧱${c[1]} ⚙️${c[2]} 🌾${c[3]}`;
+}
+
+function addTroop(){
+  let t = troops[troopSel.value];
+  let count = Math.max(1, +troopCount.value);
+
+  let c = troopCost(t,count);
+  
+  const troopNames = currentLang === "en" 
+    ? (currentCiv === "romans" ? translations.en.troopsRomans : 
+       currentCiv === "gauls" ? translations.en.troopsGauls : 
+       translations.en.troopsGermans)
+    : (currentCiv === "romans" ? translations.ru.troopsRomans : 
+       currentCiv === "gauls" ? translations.ru.troopsGauls : 
+       translations.ru.troopsGermans);
+  
+  const displayName = getDisplayName(troopNames, troopSel.value);
+
+  basket.push({n:t.name,l:count,c,displayName});
+  render();
+}
+
+/* ================= RENDER ================= */
+
+function render(){
+
+  rows.innerHTML="";
+
+  let total=[0,0,0,0];
+  let grand=0;
+
+  basket.forEach((x,index)=>{
+
+    let r=rows.insertRow();
+
+    r.insertCell().textContent=x.displayName;
+    r.insertCell().textContent=x.l;
+
+    let lineTotal=0;
+
+    x.c.forEach((v,i)=>{
+
+      r.insertCell().textContent=v;
+
+      total[i]+=v;
+      lineTotal+=v;
+
+    });
+
+    grand+=lineTotal;
+
+    r.insertCell().textContent=lineTotal;
+
+    let del=r.insertCell();
+
+    let btn=document.createElement("button");
+
+    btn.className="removeBtn";
+    btn.textContent="✖";
+
+    btn.onclick=function(){
+
+      basket.splice(index,1);
+
+      render();
+
+    };
+
+    del.appendChild(btn);
+
+  });
+
+  total.forEach((v,i)=>{
+
+    document.getElementById(
+      "t"+i
+    ).textContent=v;
+
+  });
+
+  grandTotal.textContent=grand;
+
+}
+
+/* ================= EVENTS ================= */
+
+sel.onchange = refreshCost;
+lvlInp.oninput = refreshCost;
+
+troopSel.onchange = refreshTroopCost;
+troopCount.oninput = refreshTroopCost;
+
+document.getElementById("addTroop").onclick = addTroop;
+document.getElementById("addBuilding").onclick = add;
+
+document.getElementById(
+  "clearBasket"
+).onclick=function(){
+  basket=[];
+  render();
+};
+
+/* ================= START ================= */
+
+loadBuildingsDropdown();
+loadTroops();
+refreshCost();
+refreshTroopCost();
+render();
+
+</script>
+
+</body>
+</html>
