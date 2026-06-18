@@ -69,8 +69,8 @@ tfoot{
 <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
   <label for="languageSelect" id="langLabel">Language / Язык:</label>
   <select id="languageSelect" style="margin-left: 10px;">
-    <option value="en" selected>English</option>
-    <option value="ru">Русский</option>
+    <option value="en">English</option>
+    <option value="ru selected">Русский</option>
   </select>
 </div>
 
@@ -240,7 +240,7 @@ const translations = {
   }
 };
 
-let currentLang = "en";
+let currentLang = "ru";
 
 function updateLanguage() {
   const t = translations[currentLang];
@@ -609,8 +609,7 @@ loadTroops();
 refreshCost();
 refreshTroopCost();
 render();
-updateLanguage();
-
+  
 </script>
 
 </body>
